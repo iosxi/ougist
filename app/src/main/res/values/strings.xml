@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ougist</string>
+
+    <string name="a11y_summary">画面の左右からのスワイプで扇形メニューを出します</string>
+    <string name="a11y_description">画面の端にスワイプを受け取るための細い領域を置き、扇形メニューを表示します。戻る・ホームなどの操作を実行するためにこの権限が必要です。画面の内容の読み取りは行いません。</string>
+
+    <string name="svc_on">アクセシビリティ: 有効</string>
+    <string name="svc_off">アクセシビリティ: 無効</string>
+    <string name="svc_open">設定を開く</string>
+    <string name="svc_hint_off">「インストール済みのアプリ」→「ougist」を選んで有効にしてください。ここが無効の間は扇は出ません。</string>
+    <string name="svc_hint_sideload">有効にできない (スイッチが灰色) ときは、設定 → アプリ → ougist → 右上の ⋮ → 「制限された設定を許可」を押してから、もう一度試してください。</string>
+
+    <string name="sec_slots">登録</string>
+    <string name="sec_look">見た目</string>
+    <string name="sec_feel">操作感</string>
+
+    <string name="edit_left">左のアイコンを編集</string>
+    <string name="edit_right">右のアイコンを編集</string>
+    <string name="use_left">左端から出す</string>
+    <string name="use_right">右端から出す</string>
+
+    <string name="p_radius">扇の半径</string>
+    <string name="p_icon">アイコンの大きさ</string>
+    <string name="p_span">扇の広がり</string>
+    <string name="p_dim">背景を暗くする</string>
+    <string name="p_label">名前を表示する</string>
+    <string name="p_trigger_w">反応する端の幅</string>
+    <string name="p_trigger_top">上の余白</string>
+    <string name="p_trigger_bottom">下の余白</string>
+    <string name="p_activate">反応し始める距離</string>
+    <string name="p_haptic">触覚フィードバック</string>
+
+    <string name="h_off">なし</string>
+    <string name="h_light">弱</string>
+    <string name="h_medium">中</string>
+    <string name="h_strong">強</string>
+
+    <string name="side_left">左</string>
+    <string name="side_right">右</string>
+    <string name="slot_title_fmt">%s のアイコン</string>
+    <string name="add_slot">＋ 追加</string>
+    <string name="pick_app">アプリを選ぶ</string>
+    <string name="pick_action">操作を選ぶ</string>
+    <string name="pick_delete">削除する</string>
+    <string name="search_app">アプリ名で絞り込み</string>
+    <string name="empty_slots">まだ何も登録されていません。「＋ 追加」から登録してください。</string>
+    <string name="max_slots">登録できるのは 12 個までです。</string>
+    <string name="up">上へ</string>
+    <string name="down">下へ</string>
+    <string name="remove">削除</string>
+    <string name="loading">読み込み中…</string>
+
+    <string name="type_app">アプリ</string>
+    <string name="type_action">操作</string>
+    <string name="missing">見つかりません</string>
+
+    <string name="a_back">戻る</string>
+    <string name="a_home">ホーム</string>
+    <string name="a_recents">履歴</string>
+    <string name="a_notifications">通知シェード</string>
+    <string name="a_quick_settings">クイック設定</string>
+    <string name="a_power">電源メニュー</string>
+    <string name="a_lock">画面ロック</string>
+    <string name="a_screenshot">スクリーンショット</string>
+    <string name="a_split">分割画面</string>
+    <string name="a_dismiss">シェードを閉じる</string>
+    <string name="a_media">再生 / 一時停止</string>
+    <string name="a_torch">ライト</string>
+    <string name="a_settings">ougist の設定</string>
+
+    <string name="launch_failed">起動できませんでした</string>
+    <string name="torch_failed">ライトを操作できませんでした</string>
+
+    <string name="usage">画面の左端または右端から内側へ指をすべらせると扇が開きます。指を離した位置のアイコンが実行されます。扇の中心の近くまで指を戻してから離すと、何も実行せずに閉じます。</string>
+</resources>

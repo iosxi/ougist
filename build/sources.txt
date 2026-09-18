@@ -1,0 +1,12 @@
+app/src/main/java/io/ougist/Actions.java
+app/src/main/java/io/ougist/AppPickerActivity.java
+app/src/main/java/io/ougist/Config.java
+app/src/main/java/io/ougist/EdgeView.java
+app/src/main/java/io/ougist/FanView.java
+app/src/main/java/io/ougist/IconCache.java
+app/src/main/java/io/ougist/MainActivity.java
+app/src/main/java/io/ougist/OugistService.java
+app/src/main/java/io/ougist/Slot.java
+app/src/main/java/io/ougist/SlotListActivity.java
+app/src/main/java/io/ougist/Ui.java
+C:/ougist/build/gen/io/ougist/R.java

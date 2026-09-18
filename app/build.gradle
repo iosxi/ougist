@@ -1,0 +1,31 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace "io.ougist"
+    compileSdk 36
+
+    defaultConfig {
+        applicationId "io.ougist"
+        minSdk 28
+        targetSdk 36
+        versionCode 1
+        versionName "1.0.0"
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+}
+
+// 外部ライブラリは使わない (AndroidX も無し)。
+dependencies {
+}

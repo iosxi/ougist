@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  画面の内容は一切読み取らない (canRetrieveWindowContent="false")。
+  イベントの購読もしない (accessibilityEventTypes を宣言しない)。
+  使うのは「画面の端にオーバーレイを置く」ことと「戻る/ホーム等のグローバル操作」だけ。
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:canRetrieveWindowContent="false"
+    android:canRequestFilterKeyEvents="false"
+    android:canPerformGestures="false"
+    android:notificationTimeout="0"
+    android:description="@string/a11y_description"
+    android:summary="@string/a11y_summary"
+    android:settingsActivity="io.ougist.MainActivity" />
