@@ -39,7 +39,7 @@ public final class Config {
     public int spanDeg = 150;         // 60..180 扇の広がり
     public int dimPct = 30;           // 0..60   背景を暗くする度合い
     public boolean showLabel = true;
-    public int haptic = 1;            // 0:なし 1:弱 2:中 3:強
+    public int haptic = 2;            // 0:なし 1:弱 … 6:最強 (Haptics.MAX)
 
     public static SharedPreferences prefs(Context c) {
         return c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
@@ -96,7 +96,7 @@ public final class Config {
             cfg.spanDeg = clamp(o.optInt("sp", cfg.spanDeg), 60, 180);
             cfg.dimPct = clamp(o.optInt("dm", cfg.dimPct), 0, 60);
             cfg.showLabel = o.optBoolean("lb", true);
-            cfg.haptic = clamp(o.optInt("hp", cfg.haptic), 0, 3);
+            cfg.haptic = clamp(o.optInt("hp", cfg.haptic), 0, Haptics.MAX);
         } catch (Exception ignore) {
         }
         return cfg;

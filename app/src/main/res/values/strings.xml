@@ -38,10 +38,15 @@
     <string name="p_activate">反応し始める距離</string>
     <string name="p_haptic">触覚フィードバック</string>
 
+    <string name="p_haptic_hint">「特強」以上は、端末が用意している短い合図ではなく、振幅を最大にして震える時間を延ばす。それでも弱いときは、端末の 設定 → 音とバイブレーション → 振動の強さ を上げる。</string>
+
     <string name="h_off">なし</string>
     <string name="h_light">弱</string>
     <string name="h_medium">中</string>
     <string name="h_strong">強</string>
+    <string name="h_extra">特強</string>
+    <string name="h_fierce">激強</string>
+    <string name="h_max">最強</string>
 
     <string name="side_left">左</string>
     <string name="side_right">右</string>

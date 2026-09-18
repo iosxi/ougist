@@ -1,14 +1,9 @@
 package io.ougist;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.VibrationEffect;
-import android.os.Vibrator;
-import android.os.VibratorManager;
 import android.provider.Settings;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -33,7 +28,7 @@ public class MainActivity extends Activity implements FanView.Host {
     private Button leftBtn, rightBtn;
     private FrameLayout previewBox;
     private FanView preview;
-    private final Button[] hapticBtns = new Button[4];
+    private final Button[] hapticBtns = new Button[Haptics.MAX + 1];
     private final Button[] ringBtns = new Button[Config.MAX_RINGS];
 
     @Override
@@ -213,26 +208,39 @@ public class MainActivity extends Activity implements FanView.Host {
 
         c.addView(Ui.divider(this));
         c.addView(Ui.title(this, getString(R.string.p_haptic)));
-        LinearLayout row = Ui.row(this);
-        row.setPadding(0, Ui.dp(this, 8), 0, 0);
         String[] names = {getString(R.string.h_off), getString(R.string.h_light),
-                getString(R.string.h_medium), getString(R.string.h_strong)};
-        for (int i = 0; i < 4; i++) {
-            final int level = i;
-            Button b = Ui.button(this, names[i], v -> {
-                cfg.haptic = level;
-                cfg.save(this);
-                paintHapticButtons();
-                sampleVibration(level);
-            });
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,
-                    ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-            lp.rightMargin = i < 3 ? Ui.dp(this, 6) : 0;
-            row.addView(b, lp);
-            hapticBtns[i] = b;
+                getString(R.string.h_medium), getString(R.string.h_strong),
+                getString(R.string.h_extra), getString(R.string.h_fierce),
+                getString(R.string.h_max)};
+        final int perRow = 4;
+        for (int start = 0; start < names.length; start += perRow) {
+            LinearLayout row = Ui.row(this);
+            row.setPadding(0, Ui.dp(this, 8), 0, 0);
+            for (int col = 0; col < perRow; col++) {
+                int i = start + col;
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,
+                        ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+                lp.rightMargin = col < perRow - 1 ? Ui.dp(this, 6) : 0;
+                if (i >= names.length) {
+                    row.addView(new View(this), lp);   // 端数。幅を揃えるための空き
+                    continue;
+                }
+                final int level = i;
+                Button b = Ui.button(this, names[i], v -> {
+                    cfg.haptic = level;
+                    cfg.save(this);
+                    paintHapticButtons();
+                    Haptics.play(Haptics.vibrator(this), level);
+                });
+                row.addView(b, lp);
+                hapticBtns[i] = b;
+            }
+            c.addView(row);
         }
-        c.addView(row);
         paintHapticButtons();
+        TextView hapticHint = Ui.body(this, getString(R.string.p_haptic_hint));
+        hapticHint.setPadding(0, Ui.dp(this, 8), 0, 0);
+        c.addView(hapticHint);
         return c;
     }
 
@@ -328,28 +336,4 @@ public class MainActivity extends Activity implements FanView.Host {
     public void haptic(int level) {
     }
 
-    private void sampleVibration(int level) {
-        if (level <= 0) return;
-        try {
-            Vibrator v;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                VibratorManager vm = (VibratorManager) getSystemService(Context.VIBRATOR_MANAGER_SERVICE);
-                v = vm == null ? null : vm.getDefaultVibrator();
-            } else {
-                v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-            }
-            if (v == null || !v.hasVibrator()) return;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                int id = level == 1 ? VibrationEffect.EFFECT_TICK
-                        : level == 2 ? VibrationEffect.EFFECT_CLICK
-                        : VibrationEffect.EFFECT_HEAVY_CLICK;
-                v.vibrate(VibrationEffect.createPredefined(id));
-            } else {
-                int ms = level == 1 ? 10 : level == 2 ? 18 : 28;
-                int amp = level == 1 ? 60 : level == 2 ? 140 : 255;
-                v.vibrate(VibrationEffect.createOneShot(ms, amp));
-            }
-        } catch (Throwable ignore) {
-        }
-    }
 }

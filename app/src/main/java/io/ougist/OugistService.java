@@ -1,7 +1,6 @@
 package io.ougist;
 
 import android.accessibilityservice.AccessibilityService;
-import android.annotation.TargetApi;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -14,10 +13,7 @@ import android.hardware.camera2.CameraManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.VibrationAttributes;
-import android.os.VibrationEffect;
 import android.os.Vibrator;
-import android.os.VibratorManager;
 import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.WindowManager;
@@ -69,7 +65,7 @@ public class OugistService extends AccessibilityService
         super.onServiceConnected();
         sRunning = true;
         wm = (WindowManager) getSystemService(WINDOW_SERVICE);
-        vib = vibrator();
+        vib = Haptics.vibrator(this);
         cfg = Config.load(this);
         Config.prefs(this).registerOnSharedPreferenceChangeListener(this);
         rebuildEdges();
@@ -227,7 +223,9 @@ public class OugistService extends AccessibilityService
                 return false;
             }
         }
-        haptic(cfg.haptic > 0 ? 1 : 0);   // 開いたことだけ軽く伝える
+        // 開いたことだけ伝えるので 1 段弱めに。強い設定のときに開始だけ弱いと不揃いなので、
+        // 選んだ強さについていくようにしてある。
+        haptic(cfg.haptic > 0 ? Math.max(1, cfg.haptic - 1) : 0);
         return true;
     }
 
@@ -321,47 +319,7 @@ public class OugistService extends AccessibilityService
 
     @Override
     public void haptic(int level) {
-        if (level <= 0 || vib == null || !vib.hasVibrator()) return;
-        try {
-            VibrationEffect effect;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                int id = level == 1 ? VibrationEffect.EFFECT_TICK
-                        : level == 2 ? VibrationEffect.EFFECT_CLICK
-                        : VibrationEffect.EFFECT_HEAVY_CLICK;
-                effect = VibrationEffect.createPredefined(id);
-            } else {
-                int ms = level == 1 ? 10 : level == 2 ? 18 : 28;
-                int amp = level == 1 ? 60 : level == 2 ? 140 : 255;
-                effect = VibrationEffect.createOneShot(ms, amp);
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                vibrateTouch(vib, effect);
-            } else {
-                vib.vibrate(effect, TOUCH_AUDIO_ATTRS);
-            }
-        } catch (Throwable ignore) {
-        }
-    }
-
-    private static final android.media.AudioAttributes TOUCH_AUDIO_ATTRS =
-            new android.media.AudioAttributes.Builder()
-                    .setUsage(android.media.AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
-                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build();
-
-    @TargetApi(Build.VERSION_CODES.TIRAMISU)
-    private static void vibrateTouch(Vibrator v, VibrationEffect e) {
-        v.vibrate(e, new VibrationAttributes.Builder()
-                .setUsage(VibrationAttributes.USAGE_TOUCH)
-                .build());
-    }
-
-    private Vibrator vibrator() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            VibratorManager vm = (VibratorManager) getSystemService(Context.VIBRATOR_MANAGER_SERVICE);
-            if (vm != null) return vm.getDefaultVibrator();
-        }
-        return (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        Haptics.play(vib, level);
     }
 
     // --------------------------------------------------------------- 雑

@@ -3,6 +3,7 @@ app/src/main/java/io/ougist/AppPickerActivity.java
 app/src/main/java/io/ougist/Config.java
 app/src/main/java/io/ougist/EdgeView.java
 app/src/main/java/io/ougist/FanView.java
+app/src/main/java/io/ougist/Haptics.java
 app/src/main/java/io/ougist/IconCache.java
 app/src/main/java/io/ougist/MainActivity.java
 app/src/main/java/io/ougist/OugistService.java
