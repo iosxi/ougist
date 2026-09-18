@@ -34,6 +34,7 @@ public class MainActivity extends Activity implements FanView.Host {
     private FrameLayout previewBox;
     private FanView preview;
     private final Button[] hapticBtns = new Button[4];
+    private final Button[] ringBtns = new Button[Config.MAX_RINGS];
 
     @Override
     protected void onCreate(Bundle b) {
@@ -47,6 +48,7 @@ public class MainActivity extends Activity implements FanView.Host {
         super.onResume();
         cfg = Config.load(this);
         refreshStatus();
+        paintRingButtons();
         refreshSlotButtons();
         previewBox.post(this::refreshPreview);
     }
@@ -140,6 +142,31 @@ public class MainActivity extends Activity implements FanView.Host {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         c.addView(previewBox);
 
+        c.addView(Ui.title(this, getString(R.string.p_rings)));
+        LinearLayout ringRow = Ui.row(this);
+        ringRow.setPadding(0, Ui.dp(this, 8), 0, 0);
+        String[] ringNames = {getString(R.string.rings_1), getString(R.string.rings_2)};
+        for (int i = 0; i < Config.MAX_RINGS; i++) {
+            final int count = i + 1;
+            Button b = Ui.button(this, ringNames[i], v -> {
+                cfg.rings = count;
+                cfg.save(this);
+                paintRingButtons();
+                refreshSlotButtons();
+                refreshPreview();
+            });
+            LinearLayout.LayoutParams rlp = new LinearLayout.LayoutParams(0,
+                    ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+            rlp.rightMargin = i < Config.MAX_RINGS - 1 ? Ui.dp(this, 6) : 0;
+            ringRow.addView(b, rlp);
+            ringBtns[i] = b;
+        }
+        c.addView(ringRow);
+        paintRingButtons();
+        TextView ringHint = Ui.body(this, getString(R.string.p_rings_hint));
+        ringHint.setPadding(0, Ui.dp(this, 6), 0, 0);
+        c.addView(ringHint);
+
         c.addView(Ui.slider(this, getString(R.string.p_radius), "dp", 70, 220, cfg.radiusDp, v -> {
             cfg.radiusDp = v;
             saveAndPreview();
@@ -225,6 +252,15 @@ public class MainActivity extends Activity implements FanView.Host {
         }
     }
 
+    private void paintRingButtons() {
+        for (int i = 0; i < ringBtns.length; i++) {
+            boolean on = i + 1 == cfg.rings;
+            ringBtns[i].setBackground(Ui.pill(this,
+                    on ? getColor(R.color.accent) : Ui.alpha(getColor(R.color.text_sub), 0.16f), 10));
+            ringBtns[i].setTextColor(on ? Color.WHITE : getColor(R.color.text));
+        }
+    }
+
     private void refreshStatus() {
         boolean on = serviceEnabled();
         status.setText(on ? R.string.svc_on : R.string.svc_off);
@@ -233,25 +269,46 @@ public class MainActivity extends Activity implements FanView.Host {
     }
 
     private void refreshSlotButtons() {
-        leftBtn.setText(getString(R.string.edit_left) + "  (" + cfg.left.size() + ")");
-        rightBtn.setText(getString(R.string.edit_right) + "  (" + cfg.right.size() + ")");
+        leftBtn.setText(getString(R.string.edit_left) + "  " + counts(true));
+        rightBtn.setText(getString(R.string.edit_right) + "  " + counts(false));
+    }
+
+    /** 1 列なら「(4)」、2 列なら「(4 / 3)」と内側から順に出す。 */
+    private String counts(boolean isLeft) {
+        StringBuilder sb = new StringBuilder("(");
+        for (int r = 0; r < cfg.rings; r++) {
+            if (r > 0) sb.append(" / ");
+            sb.append(cfg.slots(isLeft, r).size());
+        }
+        return sb.append(")").toString();
     }
 
     private void refreshPreview() {
         if (previewBox.getWidth() == 0) return;
-        boolean isLeft = !cfg.left.isEmpty() || cfg.right.isEmpty();
-        List<Slot> slots = isLeft ? cfg.left : cfg.right;
-        if (slots.isEmpty()) slots = demoSlots();
+        boolean isLeft = cfg.hasSlots(true) || !cfg.hasSlots(false);
+        List<List<Slot>> rings = cfg.hasSlots(isLeft) ? cfg.ringSlots(isLeft) : demoRings();
+        int total = 0;
+        for (List<Slot> one : rings) total += one.size();
         float x = isLeft ? Ui.dp(this, 10) : previewBox.getWidth() - Ui.dp(this, 10);
-        preview.begin(cfg, slots, isLeft, x, previewBox.getHeight() / 2f);
-        preview.setForcedSelection(Math.min(1, slots.size() - 1));
+        preview.begin(cfg, rings, isLeft, x, previewBox.getHeight() / 2f);
+        preview.setForcedSelection(Math.min(1, total - 1));
     }
 
-    private List<Slot> demoSlots() {
-        List<Slot> l = new ArrayList<>();
-        String[] ids = {"back", "home", "recents", "notifications", "settings"};
-        for (String id : ids) l.add(Slot.action(id, Actions.label(this, id)));
-        return l;
+    /** まだ何も登録していないときに見本として出すもの。 */
+    private List<List<Slot>> demoRings() {
+        String[][] ids = {
+                {"back", "home", "recents", "notifications", "settings"},
+                {"quick_settings", "lock", "split"},
+        };
+        List<List<Slot>> out = new ArrayList<>();
+        for (int r = 0; r < cfg.rings; r++) {
+            List<Slot> one = new ArrayList<>();
+            for (String id : ids[Math.min(r, ids.length - 1)]) {
+                one.add(Slot.action(id, Actions.label(this, id)));
+            }
+            out.add(one);
+        }
+        return out;
     }
 
     private boolean serviceEnabled() {

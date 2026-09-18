@@ -26,9 +26,12 @@ public class SlotListActivity extends Activity {
 
     private Config cfg;
     private boolean left;
+    private int ring;                // 0 が内側、1 が外側
     private List<Slot> slots;
     private Adapter adapter;
     private TextView empty;
+    private TextView head;
+    private final Button[] ringBtns = new Button[Config.MAX_RINGS];
     private int pendingIndex = -1;   // -1 は新規追加
 
     @Override
@@ -36,7 +39,8 @@ public class SlotListActivity extends Activity {
         super.onCreate(b);
         left = getIntent().getBooleanExtra("left", true);
         cfg = Config.load(this);
-        slots = cfg.slots(left);
+        ring = 0;
+        slots = cfg.slots(left, ring);
         setTitle(getString(R.string.slot_title_fmt,
                 getString(left ? R.string.side_left : R.string.side_right)));
 
@@ -44,11 +48,27 @@ public class SlotListActivity extends Activity {
         root.setBackgroundColor(getColor(R.color.bg));
         Ui.fitSystemBars(root, 12, 12);
 
-        TextView head = Ui.title(this, getString(R.string.slot_title_fmt,
-                getString(left ? R.string.side_left : R.string.side_right)));
+        head = Ui.title(this, "");
         head.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
         head.setPadding(0, 0, 0, Ui.dp(this, 6));
         root.addView(head);
+
+        // 2 列のときだけ、内側 / 外側を切り替えるつまみを出す
+        if (cfg.rings > 1) {
+            LinearLayout ringRow = Ui.row(this);
+            ringRow.setPadding(0, 0, 0, Ui.dp(this, 8));
+            String[] names = {getString(R.string.ring_inner), getString(R.string.ring_outer)};
+            for (int i = 0; i < Config.MAX_RINGS; i++) {
+                final int which = i;
+                Button rb = Ui.button(this, names[i], v -> switchRing(which));
+                LinearLayout.LayoutParams rlp = new LinearLayout.LayoutParams(0,
+                        ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+                rlp.rightMargin = i < Config.MAX_RINGS - 1 ? Ui.dp(this, 6) : 0;
+                ringRow.addView(rb, rlp);
+                ringBtns[i] = rb;
+            }
+            root.addView(ringRow);
+        }
 
         empty = Ui.body(this, getString(R.string.empty_slots));
         empty.setPadding(0, Ui.dp(this, 12), 0, Ui.dp(this, 12));
@@ -79,7 +99,30 @@ public class SlotListActivity extends Activity {
         refresh();
     }
 
+    private void switchRing(int which) {
+        if (which == ring) return;
+        ring = which;
+        slots = cfg.slots(left, ring);
+        pendingIndex = -1;
+        refresh();
+    }
+
     private void refresh() {
+        String side = getString(left ? R.string.side_left : R.string.side_right);
+        if (cfg.rings > 1) {
+            String where = getString(ring == 0 ? R.string.ring_inner : R.string.ring_outer);
+            head.setText(getString(R.string.slot_title_fmt,
+                    getString(R.string.slot_ring_fmt, side, where)));
+            for (int i = 0; i < ringBtns.length; i++) {
+                if (ringBtns[i] == null) continue;
+                boolean on = i == ring;
+                ringBtns[i].setBackground(Ui.pill(this,
+                        on ? getColor(R.color.accent) : Ui.alpha(getColor(R.color.text_sub), 0.16f), 10));
+                ringBtns[i].setTextColor(on ? android.graphics.Color.WHITE : getColor(R.color.text));
+            }
+        } else {
+            head.setText(getString(R.string.slot_title_fmt, side));
+        }
         empty.setVisibility(slots.isEmpty() ? View.VISIBLE : View.GONE);
         adapter.notifyDataSetChanged();
     }

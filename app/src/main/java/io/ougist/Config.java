@@ -11,21 +11,30 @@ import java.util.List;
 
 /** 設定ひとまとめ。SharedPreferences に JSON 1 本で置く。 */
 public final class Config {
+    /** 1 つの円あたりに置ける数。 */
     public static final int MAX_SLOTS = 12;
+    /** 円 (列) は内側と外側の 2 つまで。 */
+    public static final int MAX_RINGS = 2;
+
     private static final String PREFS = "ougist";
     private static final String KEY = "config";
 
+    /** 内側の円。 */
     public final List<Slot> left = new ArrayList<>();
     public final List<Slot> right = new ArrayList<>();
+    /** 外側の円。列数が 2 のときだけ使う。 */
+    public final List<Slot> leftOuter = new ArrayList<>();
+    public final List<Slot> rightOuter = new ArrayList<>();
 
     public boolean leftEnabled = true;
     public boolean rightEnabled = true;
 
+    public int rings = 1;             // 1..2    円 (列) の数
     public int triggerWidthDp = 14;   // 6..48   端の反応する帯の幅
     public int triggerTopPct = 0;     // 0..45   帯の上の余白 (画面高さに対する割合)
     public int triggerBottomPct = 0;  // 0..45   帯の下の余白
     public int activateDp = 18;       // 8..48   扇が開き始める移動量
-    public int radiusDp = 132;        // 70..220 扇の半径
+    public int radiusDp = 132;        // 70..220 内側の円の半径
     public int iconDp = 46;           // 28..72  アイコンの大きさ
     public int spanDeg = 150;         // 60..180 扇の広がり
     public int dimPct = 30;           // 0..60   背景を暗くする度合い
@@ -36,8 +45,29 @@ public final class Config {
         return c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }
 
+    /** ring は 0 が内側、1 が外側。 */
+    public List<Slot> slots(boolean isLeft, int ring) {
+        if (ring <= 0) return isLeft ? left : right;
+        return isLeft ? leftOuter : rightOuter;
+    }
+
     public List<Slot> slots(boolean isLeft) {
-        return isLeft ? left : right;
+        return slots(isLeft, 0);
+    }
+
+    /** いま使う円ぶんの一覧。内側から順に並ぶ。 */
+    public List<List<Slot>> ringSlots(boolean isLeft) {
+        List<List<Slot>> out = new ArrayList<>(rings);
+        for (int r = 0; r < rings; r++) out.add(slots(isLeft, r));
+        return out;
+    }
+
+    /** その側に 1 つでも登録があるか。 */
+    public boolean hasSlots(boolean isLeft) {
+        for (int r = 0; r < rings; r++) {
+            if (!slots(isLeft, r).isEmpty()) return true;
+        }
+        return false;
     }
 
     public static Config load(Context c) {
@@ -51,8 +81,11 @@ public final class Config {
             JSONObject o = new JSONObject(raw);
             readSlots(o.optJSONArray("left"), cfg.left);
             readSlots(o.optJSONArray("right"), cfg.right);
+            readSlots(o.optJSONArray("left2"), cfg.leftOuter);
+            readSlots(o.optJSONArray("right2"), cfg.rightOuter);
             cfg.leftEnabled = o.optBoolean("le", true);
             cfg.rightEnabled = o.optBoolean("re", true);
+            cfg.rings = clamp(o.optInt("rg", cfg.rings), 1, MAX_RINGS);
             cfg.triggerWidthDp = clamp(o.optInt("tw", cfg.triggerWidthDp), 6, 48);
             int legacy = clamp(o.optInt("tm", 0), 0, 45);   // 以前の「上下の余白」
             cfg.triggerTopPct = clamp(o.optInt("tt", legacy), 0, 45);
@@ -74,8 +107,11 @@ public final class Config {
         try {
             o.put("left", writeSlots(left));
             o.put("right", writeSlots(right));
+            o.put("left2", writeSlots(leftOuter));
+            o.put("right2", writeSlots(rightOuter));
             o.put("le", leftEnabled);
             o.put("re", rightEnabled);
+            o.put("rg", rings);
             o.put("tw", triggerWidthDp);
             o.put("tt", triggerTopPct);
             o.put("tb", triggerBottomPct);

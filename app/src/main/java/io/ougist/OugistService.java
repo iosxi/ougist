@@ -148,8 +148,8 @@ public class OugistService extends AccessibilityService
         int top = b.height() * cfg.triggerTopPct / 100;
         int bottom = b.height() * cfg.triggerBottomPct / 100;
         int h = Math.max(Math.round(48 * density()), b.height() - top - bottom);
-        if (cfg.leftEnabled && !cfg.left.isEmpty()) edgeLeft = addEdge(true, w, h, top);
-        if (cfg.rightEnabled && !cfg.right.isEmpty()) edgeRight = addEdge(false, w, h, top);
+        if (cfg.leftEnabled && cfg.hasSlots(true)) edgeLeft = addEdge(true, w, h, top);
+        if (cfg.rightEnabled && cfg.hasSlots(false)) edgeRight = addEdge(false, w, h, top);
     }
 
     private EdgeView addEdge(boolean left, int w, int h, int y) {
@@ -199,10 +199,10 @@ public class OugistService extends AccessibilityService
     @Override
     public boolean onGestureStart(boolean left, float x, float y) {
         if (cfg == null || wm == null) return false;
-        List<Slot> slots = cfg.slots(left);
-        if (slots.isEmpty()) return false;
+        if (!cfg.hasSlots(left)) return false;
+        List<List<Slot>> rings = cfg.ringSlots(left);
         if (fan == null) fan = new FanView(this, this);
-        fan.begin(cfg, slots, left, x, y);
+        fan.begin(cfg, rings, left, x, y);
         if (!fanShown) {
             Rect b = displayBounds();
             WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
@@ -372,8 +372,11 @@ public class OugistService extends AccessibilityService
         final int glyph = Math.round(cfg.iconDp * density() * 0.56f);
         final Config c = cfg;
         new Thread(() -> {
-            IconCache.warm(OugistService.this, c.left, app, glyph);
-            IconCache.warm(OugistService.this, c.right, app, glyph);
+            for (boolean side : new boolean[]{true, false}) {
+                for (List<Slot> one : c.ringSlots(side)) {
+                    IconCache.warm(OugistService.this, one, app, glyph);
+                }
+            }
         }, "ougist-icons").start();
     }
 

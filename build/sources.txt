@@ -9,4 +9,4 @@ app/src/main/java/io/ougist/OugistService.java
 app/src/main/java/io/ougist/Slot.java
 app/src/main/java/io/ougist/SlotListActivity.java
 app/src/main/java/io/ougist/Ui.java
-C:/ougist/build/gen/io/ougist/R.java
+C:/projects/ougist/build/gen/io/ougist/R.java

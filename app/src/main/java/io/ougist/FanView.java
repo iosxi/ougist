@@ -9,6 +9,7 @@ import android.graphics.RectF;
 import android.os.SystemClock;
 import android.view.View;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /** 画面いっぱいの板。扇そのものを描き、指の位置からどれを選んでいるかを決める。 */
@@ -38,15 +39,24 @@ final class FanView extends View {
     private final RectF rect = new RectF();
 
     private Config cfg;
-    private List<Slot> slots;
+    /** 内側の円から順につないだ 1 本の並び。 */
+    private final List<Slot> flat = new ArrayList<>();
     private boolean left;
 
     private float downX, downY, fingerX, fingerY;
-    private float cx, cy, radius, itemR, iconPx, glyphPx;
+    private float cx, cy, radius, itemR, iconPx, glyphPx;   // radius は一番外の円
     private float[] angles = new float[0];
     private float[] px = new float[0];
     private float[] py = new float[0];
     private float[] grow = new float[0];
+
+    // 円 (列) ごとの内訳。0 が内側。
+    private int ringCount = 1;
+    private final float[] ringR = new float[Config.MAX_RINGS];
+    private final float[] ringStep = new float[Config.MAX_RINGS];
+    private final int[] ringStart = new int[Config.MAX_RINGS];
+    private final int[] ringN = new int[Config.MAX_RINGS];
+
     private int selected = -1;
     private int forceSelect = -1;   // 設定画面の見本で使う
     private long t0;
@@ -63,18 +73,31 @@ final class FanView extends View {
         setWillNotDraw(false);
     }
 
-    /** 指が端に触れて扇を開くとき。x, y は画面座標。 */
-    void begin(Config cfg, List<Slot> slots, boolean left, float x, float y) {
+    /** 指が端に触れて扇を開くとき。rings は内側から順、x, y は画面座標。 */
+    void begin(Config cfg, List<List<Slot>> rings, boolean left, float x, float y) {
         this.cfg = cfg;
-        this.slots = slots;
         this.left = left;
         this.forceSelect = -1;
+
+        flat.clear();
+        ringCount = Math.max(1, Math.min(rings.size(), Config.MAX_RINGS));
+        for (int r = 0; r < Config.MAX_RINGS; r++) {
+            ringStart[r] = 0;
+            ringN[r] = 0;
+        }
+        for (int r = 0; r < ringCount; r++) {
+            List<Slot> one = rings.get(r);
+            ringStart[r] = flat.size();
+            ringN[r] = one.size();
+            flat.addAll(one);
+        }
+
         downX = fingerX = x;
         downY = fingerY = y;
         selected = -1;
         laidOut = false;
         t0 = SystemClock.uptimeMillis();
-        int n = slots.size();
+        int n = flat.size();
         if (angles.length != n) {
             angles = new float[n];
             px = new float[n];
@@ -109,28 +132,45 @@ final class FanView extends View {
     }
 
     Slot selectedSlot() {
-        if (slots == null || selected < 0 || selected >= slots.size()) return null;
-        return slots.get(selected);
+        if (selected < 0 || selected >= flat.size()) return null;
+        return flat.get(selected);
     }
 
     private int pick(float x, float y) {
-        int n = slots.size();
+        int n = flat.size();
         if (n == 0) return -1;
         float dx = left ? (x - cx) : (cx - x);
         float dy = y - cy;
         float dist = (float) Math.hypot(dx, dy);
-        if (dist < radius * 0.38f) return -1;        // 中心付近に戻したら取り消し
+        if (dist < ringR[0] * 0.38f) return -1;      // 中心付近に戻したら取り消し
+
+        // まず、指の距離がどの円に近いかを決める
+        int ring = -1;
+        float bestGap = Float.MAX_VALUE;
+        for (int r = 0; r < ringCount; r++) {
+            if (ringN[r] == 0) continue;
+            float gap = Math.abs(dist - ringR[r]);
+            if (gap < bestGap) {
+                bestGap = gap;
+                ring = r;
+            }
+        }
+        if (ring < 0) return -1;
+
+        // その円の中で、角度が一番近いもの
         float a = (float) Math.atan2(dy, dx);
         int best = -1;
         float bestDiff = Float.MAX_VALUE;
-        for (int i = 0; i < n; i++) {
+        int from = ringStart[ring];
+        int to = from + ringN[ring];
+        for (int i = from; i < to; i++) {
             float diff = Math.abs(a - angles[i]);
             if (diff < bestDiff) {
                 bestDiff = diff;
                 best = i;
             }
         }
-        float step = n > 1 ? Math.abs(angles[1] - angles[0]) : (float) Math.toRadians(cfg.spanDeg);
+        float step = ringN[ring] > 1 ? ringStep[ring] : (float) Math.toRadians(cfg.spanDeg);
         float allow = Math.max(step * 0.6f, (float) Math.toRadians(20));
         return bestDiff > allow ? -1 : best;
     }
@@ -139,7 +179,7 @@ final class FanView extends View {
         int w = getWidth();
         int h = getHeight();
         if (w == 0 || h == 0) return;
-        int n = slots.size();
+        int n = flat.size();
 
         iconPx = cfg.iconDp * density;
         itemR = iconPx * 0.62f;
@@ -148,21 +188,38 @@ final class FanView extends View {
         float half = (float) Math.toRadians(cfg.spanDeg) / 2f;
         float sinHalf = (float) Math.sin(Math.min(half, Math.PI / 2));
         float pad = itemR + 8 * density;
+        float gap = itemR * 2f + 10 * density;          // 円と円の間隔
+        float spread = (ringCount - 1) * gap;           // 内側から外側までの差
 
-        radius = Math.min(cfg.radiusDp * density, w * 0.74f);
-        float maxR = (h / 2f - pad) / Math.max(sinHalf, 0.05f);
-        radius = Math.max(itemR * 2f, Math.min(radius, maxR));
+        float maxOuter = Math.min(w * 0.74f, (h / 2f - pad) / Math.max(sinHalf, 0.05f));
+        float inner = cfg.radiusDp * density;
+        float outer = inner + spread;
+        if (outer > maxOuter) {                          // 画面に収まらなければ内へ寄せる
+            outer = maxOuter;
+            inner = outer - spread;
+        }
+        if (inner < itemR * 2f) {                        // それでも足りなければ内側を最小に
+            inner = itemR * 2f;
+            outer = inner + spread;
+        }
+        radius = outer;
+        for (int r = 0; r < ringCount; r++) ringR[r] = inner + gap * r;
 
         float reach = radius * sinHalf;
         cx = downX;
         cy = clamp(downY, reach + pad, Math.max(reach + pad, h - reach - pad));
 
         int dir = left ? 1 : -1;
-        for (int i = 0; i < n; i++) {
-            float a = (n == 1) ? 0f : -half + (2f * half) * i / (n - 1);
-            angles[i] = a;
-            px[i] = cx + dir * radius * (float) Math.cos(a);
-            py[i] = cy + radius * (float) Math.sin(a);
+        for (int r = 0; r < ringCount; r++) {
+            int cnt = ringN[r];
+            ringStep[r] = cnt > 1 ? (2f * half) / (cnt - 1) : 2f * half;
+            for (int i = 0; i < cnt; i++) {
+                int k = ringStart[r] + i;
+                float a = (cnt == 1) ? 0f : -half + ringStep[r] * i;
+                angles[k] = a;
+                px[k] = cx + dir * ringR[r] * (float) Math.cos(a);
+                py[k] = cy + ringR[r] * (float) Math.sin(a);
+            }
         }
         laidOut = true;
         selected = forceSelect >= 0 ? Math.min(forceSelect, n - 1) : pick(fingerX, fingerY);
@@ -170,7 +227,7 @@ final class FanView extends View {
 
     @Override
     protected void onDraw(Canvas c) {
-        if (slots == null || slots.isEmpty()) return;
+        if (flat.isEmpty()) return;
         if (!laidOut) layoutFan();
         if (!laidOut) return;
 
@@ -182,14 +239,17 @@ final class FanView extends View {
             c.drawColor(Color.argb((int) (cfg.dimPct * 2.55f * p), 0, 0, 0));
         }
 
-        // 案内の弧
-        float r = radius * p;
+        // 案内の弧。円 (列) ごとに 1 本
         float halfDeg = cfg.spanDeg / 2f;
-        rect.set(cx - r, cy - r, cx + r, cy + r);
         line.setColor(C_ARC);
         line.setAlpha((int) (0x33 * p));
         line.setStrokeWidth(1.5f * density);
-        c.drawArc(rect, left ? -halfDeg : 180f - halfDeg, cfg.spanDeg, false, line);
+        for (int r = 0; r < ringCount; r++) {
+            if (ringN[r] == 0) continue;
+            float rr = ringR[r] * p;
+            rect.set(cx - rr, cy - rr, cx + rr, cy + rr);
+            c.drawArc(rect, left ? -halfDeg : 180f - halfDeg, cfg.spanDeg, false, line);
+        }
 
         // 中心の点。取り消し圏内にいるときだけはっきり光らせる
         fill.setColor(selected < 0 ? C_PIVOT_ON : C_PIVOT);
@@ -197,7 +257,7 @@ final class FanView extends View {
         c.drawCircle(cx, cy, 5f * density * p, fill);
 
         boolean animating = t < 1f;
-        int n = slots.size();
+        int n = flat.size();
         for (int i = 0; i < n; i++) {
             float target = (i == selected) ? 1f : 0f;
             if (Math.abs(grow[i] - target) > 0.004f) {
@@ -219,11 +279,11 @@ final class FanView extends View {
             float x = cx + (px[i] - cx) * p;
             float y = cy + (py[i] - cy) * p;
             float s = (0.82f + 0.18f * p) * (1f + 0.16f * grow[i]);
-            drawItem(c, slots.get(i), x, y, s, grow[i], p);
+            drawItem(c, flat.get(i), x, y, s, grow[i], p);
         }
 
         if (cfg.showLabel && selected >= 0) {
-            drawLabel(c, slots.get(selected),
+            drawLabel(c, flat.get(selected),
                     cx + (px[selected] - cx) * p,
                     cy + (py[selected] - cy) * p,
                     itemR * (1f + 0.16f * grow[selected]));

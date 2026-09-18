@@ -20,6 +20,13 @@
     <string name="use_left">左端から出す</string>
     <string name="use_right">右端から出す</string>
 
+    <string name="p_rings">列数</string>
+    <string name="rings_1">1 列</string>
+    <string name="rings_2">2 列</string>
+    <string name="ring_inner">内側</string>
+    <string name="ring_outer">外側</string>
+    <string name="p_rings_hint">2 列にすると、内側の円と外側の円にそれぞれアイコンを置けます。</string>
+
     <string name="p_radius">扇の半径</string>
     <string name="p_icon">アイコンの大きさ</string>
     <string name="p_span">扇の広がり</string>
@@ -45,7 +52,8 @@
     <string name="pick_delete">削除する</string>
     <string name="search_app">アプリ名で絞り込み</string>
     <string name="empty_slots">まだ何も登録されていません。「＋ 追加」から登録してください。</string>
-    <string name="max_slots">登録できるのは 12 個までです。</string>
+    <string name="max_slots">1 つの円に登録できるのは 12 個までです。</string>
+    <string name="slot_ring_fmt">%1$s の %2$s</string>
     <string name="up">上へ</string>
     <string name="down">下へ</string>
     <string name="remove">削除</string>
