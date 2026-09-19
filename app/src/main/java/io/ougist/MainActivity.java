@@ -28,6 +28,7 @@ public class MainActivity extends Activity implements FanView.Host {
     private Button leftBtn, rightBtn;
     private FrameLayout previewBox;
     private FanView preview;
+    private View gapSlider;
     private final Button[] hapticBtns = new Button[Haptics.MAX + 1];
     private final Button[] ringBtns = new Button[Config.MAX_RINGS];
 
@@ -166,6 +167,12 @@ public class MainActivity extends Activity implements FanView.Host {
             cfg.radiusDp = v;
             saveAndPreview();
         }));
+        gapSlider = Ui.slider(this, getString(R.string.p_ring_gap), "dp", 30, 160, cfg.ringGapDp, v -> {
+            cfg.ringGapDp = v;
+            saveAndPreview();
+        });
+        c.addView(gapSlider);
+        paintRingButtons();
         c.addView(Ui.slider(this, getString(R.string.p_icon), "dp", 28, 72, cfg.iconDp, v -> {
             cfg.iconDp = v;
             saveAndPreview();
@@ -266,6 +273,10 @@ public class MainActivity extends Activity implements FanView.Host {
             ringBtns[i].setBackground(Ui.pill(this,
                     on ? getColor(R.color.accent) : Ui.alpha(getColor(R.color.text_sub), 0.16f), 10));
             ringBtns[i].setTextColor(on ? Color.WHITE : getColor(R.color.text));
+        }
+        // 外側の円がないときは「内側から外側までの距離」は効かないので隠す
+        if (gapSlider != null) {
+            gapSlider.setVisibility(cfg.rings > 1 ? View.VISIBLE : View.GONE);
         }
     }
 

@@ -188,7 +188,7 @@ final class FanView extends View {
         float half = (float) Math.toRadians(cfg.spanDeg) / 2f;
         float sinHalf = (float) Math.sin(Math.min(half, Math.PI / 2));
         float pad = itemR + 8 * density;
-        float gap = itemR * 2f + 10 * density;          // 円と円の間隔
+        float gap = cfg.ringGapDp * density;            // 内側の円から外側の円までの距離
         float spread = (ringCount - 1) * gap;           // 内側から外側までの差
 
         float maxOuter = Math.min(w * 0.74f, (h / 2f - pad) / Math.max(sinHalf, 0.05f));

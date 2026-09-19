@@ -27,7 +27,8 @@
     <string name="ring_outer">外側</string>
     <string name="p_rings_hint">2 列にすると、内側の円と外側の円にそれぞれアイコンを置けます。</string>
 
-    <string name="p_radius">扇の半径</string>
+    <string name="p_radius">内側の円までの距離</string>
+    <string name="p_ring_gap">内側から外側までの距離</string>
     <string name="p_icon">アイコンの大きさ</string>
     <string name="p_span">扇の広がり</string>
     <string name="p_dim">背景を暗くする</string>

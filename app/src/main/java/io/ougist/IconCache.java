@@ -72,19 +72,40 @@ public final class IconCache {
         }
     }
 
-    /** アプリのアイコンは円に合わせて切り、操作のアイコンはそのまま描く。 */
+    /**
+     * アプリのアイコンは円に合わせて切り、操作のアイコンはそのまま描く。
+     *
+     * <p>AdaptiveIconDrawable は draw() の中で自分の層を 1.5 倍に広げてから端末の形で抜く
+     * (AOSP の updateLayerBoundsInternal が DEFAULT_VIEW_PORT_SCALE = 1/1.5 で子の枠を広げる)。
+     * ここで重ねて 1.5 倍に置くと 2.25 倍になり、アイコンのフチが落ちて何のアプリか読み取れない。
+     * そこで層を自分で取り出し、決まりどおりの 1.5 倍だけ広げて丸く抜く。ランチャーと同じ見え方になる。
+     */
     private static Bitmap render(Drawable d, int size, boolean maskToCircle) {
         Bitmap bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(bmp);
         boolean adaptive = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && d instanceof AdaptiveIconDrawable;
         if (maskToCircle && adaptive) {
-            // 108 の画用紙のうち中央 72 だけが見える、という決まりに合わせて 1.5 倍に描いてから丸く抜く
+            AdaptiveIconDrawable ad = (AdaptiveIconDrawable) d;
+            // 108 の画用紙のうち中央 72 だけが見える、という決まりに合わせて 1.5 倍に置く
             int full = Math.round(size * 108f / 72f);
             int off = (size - full) / 2;
             Bitmap tmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
             Canvas tc = new Canvas(tmp);
-            d.setBounds(off, off, off + full, off + full);
-            d.draw(tc);
+            Drawable bg = ad.getBackground();
+            Drawable fg = ad.getForeground();
+            if (bg == null && fg == null) {          // 層を持たない作りなら丸ごと置く
+                d.setBounds(0, 0, size, size);
+                d.draw(tc);
+            } else {
+                if (bg != null) {
+                    bg.setBounds(off, off, off + full, off + full);
+                    bg.draw(tc);
+                }
+                if (fg != null) {
+                    fg.setBounds(off, off, off + full, off + full);
+                    fg.draw(tc);
+                }
+            }
             Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
             p.setColor(Color.BLACK);
             c.drawCircle(size / 2f, size / 2f, size / 2f, p);

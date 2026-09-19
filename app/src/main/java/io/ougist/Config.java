@@ -34,7 +34,8 @@ public final class Config {
     public int triggerTopPct = 0;     // 0..45   帯の上の余白 (画面高さに対する割合)
     public int triggerBottomPct = 0;  // 0..45   帯の下の余白
     public int activateDp = 18;       // 8..48   扇が開き始める移動量
-    public int radiusDp = 132;        // 70..220 内側の円の半径
+    public int radiusDp = 132;        // 70..220 始点から内側の円までの距離
+    public int ringGapDp = 66;        // 30..160 内側の円から外側の円までの距離
     public int iconDp = 46;           // 28..72  アイコンの大きさ
     public int spanDeg = 150;         // 60..180 扇の広がり
     public int dimPct = 30;           // 0..60   背景を暗くする度合い
@@ -92,6 +93,7 @@ public final class Config {
             cfg.triggerBottomPct = clamp(o.optInt("tb", legacy), 0, 45);
             cfg.activateDp = clamp(o.optInt("ac", cfg.activateDp), 8, 48);
             cfg.radiusDp = clamp(o.optInt("r", cfg.radiusDp), 70, 220);
+            cfg.ringGapDp = clamp(o.optInt("rgp", cfg.ringGapDp), 30, 160);
             cfg.iconDp = clamp(o.optInt("ic", cfg.iconDp), 28, 72);
             cfg.spanDeg = clamp(o.optInt("sp", cfg.spanDeg), 60, 180);
             cfg.dimPct = clamp(o.optInt("dm", cfg.dimPct), 0, 60);
@@ -117,6 +119,7 @@ public final class Config {
             o.put("tb", triggerBottomPct);
             o.put("ac", activateDp);
             o.put("r", radiusDp);
+            o.put("rgp", ringGapDp);
             o.put("ic", iconDp);
             o.put("sp", spanDeg);
             o.put("dm", dimPct);
